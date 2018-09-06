@@ -40,22 +40,28 @@
   { \LoadClass { ctexart } }
 
 % 载入相关宏包
+% \PassOptionsToPackage { table } { xcolor }
+\PassOptionsToPackage { hyphens } { url }
 \RequirePackage
   {
     amsmath,
+    caption,
     diagbox,
     dirtree,
     enumitem,
     fancyvrb,
+    fontawesome,
     geometry,
     graphicx,
     hologo,
+    listings,
+    longtable,
     tabularx,
     unicode-math,
+    xcolor,
     xurl,
     zref-abspage,
-    hyperref,
-    longtable
+    hyperref
   }
 
 % 西文字体
@@ -169,9 +175,19 @@
 % 其他字体
 \bool_if:NTF \g_faqcn_use_customized_fonts_bool
   {
-    \newfontfamily \FETAMONT { ffm }
+    % 用于代码环境
+    \newfontfamily \CodeFont { RobotoMono }
       [
-        % 只选择 10 号
+        Extension      = .ttf,
+        UprightFont    = *-Regular,
+        BoldFont       = *-Bold,
+        ItalicFont     = *-Italic,
+        BoldItalicFont = *-BoldItalic
+      ]
+    % 用于 METAFONT logo 等
+    % 只选择 10 号
+    \newfontfamily \LogoFont { ffm }
+      [
         Extension      = .otf,
         UprightFont    = * r10,
         BoldFont       = * b10,
@@ -180,15 +196,16 @@
       ]
   }
   {
-    \cs_set_eq:NN \FETAMONT \sffamily
+    \cs_set_eq:NN \CodeFont \ttfamily
+    \cs_set_eq:NN \LogoFont \sffamily
   }
 
 % 中文版式设置
 \ctexset
   {
-    punct = kaiming,
+    % punct = kaiming,
     section / number = \Alph { section },
-    section / format = \Large\normalfont\sffamily\centering
+    section / format = \Large \normalfont \sffamily \centering
   }
 
 % 列表环境
@@ -196,7 +213,10 @@
   {
     itemsep       = 0 pt,
     parsep        = 0 pt,
-    listparindent = \parindent
+    topsep        = 0 pt,
+    listparindent = \parindent,
+    leftmargin    = \parindent,
+    itemindent    = 0 pt
   }
 
 % 页面尺寸
@@ -205,14 +225,29 @@
     paper      = a4paper,
     vmargin    = 2.54 cm,
     hmargin    = 3.18 cm,
-    headheight = 15 pt
+    headheight = 15 pt,
+    % showframe
+  }
+
+% 浮动体标题样式
+\captionsetup [ figure ]
+  {
+    font     = small,
+    labelsep = quad
+  }
+\captionsetup [ table  ]
+  {
+    font     = { small, sf },
+    labelsep = quad
   }
 
 % hyperref 有关设置
 \hypersetup
   {
     bookmarksnumbered = true,
-    colorlinks        = true
+    colorlinks        = true,
+    pdftitle          = \faqTitle,
+    pdfauthor         = \faqAuthor
   }
 
 % 脚注
@@ -246,11 +281,16 @@
 \cs_new_protected:Npn \faqcn_faq:nn #1#2
   {
     \tl_set:Nn \l__faqcn_faq_title_tl { \textbf { \int_use:N \g_faqcn_count_int \quad #1 } }
-    \tl_set:Nn \l__faqcn_faq_name_tl  { faq: #2 }
+    \tl_if_empty:nTF {#2}
+      {
+        \tl_set:Nn \l__faqcn_faq_name_tl  { faq: no-tag- \int_use:N \g_faqcn_no_tag_count_int }
+        \int_gincr:N \g_faqcn_no_tag_count_int
+      }
+      { \tl_set:Nn \l__faqcn_faq_name_tl  { faq: #2 } }
     % 问题之间留空
     \skip_vertical:n { 2 ex }
     % 排版标题，以及交叉引用
-    \hypertarget { faq @ #2 } { \tl_use:N \l__faqcn_faq_title_tl }
+    \hypertarget {  \tl_use:N \l__faqcn_faq_name_tl } { \noindent \tl_use:N \l__faqcn_faq_title_tl }
     \zref@labelbylist { \tl_use:N \l__faqcn_faq_name_tl } { faqcn }
     % PDF 书签
     \pdfbookmark [ 2 ]
@@ -262,7 +302,9 @@
 \tl_new:N \l__faqcn_faq_title_tl
 \tl_new:N \l__faqcn_faq_name_tl
 \int_new:N \g_faqcn_count_int
-\int_set_eq:NN \g_faqcn_count_int \c_one
+\int_new:N \g_faqcn_no_tag_count_int
+\int_set_eq:NN \g_faqcn_count_int        \c_one
+\int_set_eq:NN \g_faqcn_no_tag_count_int \c_one
 
 \zref@newlist { faqcn }
 \zref@newprop { faq@num } { \int_use:N \g_faqcn_count_int }
@@ -276,8 +318,24 @@
 
 % 问答环境参考文献
 \NewDocumentEnvironment { reference } { }
-  { \textbf { 参考： } \enumerate [ topsep = 0pt ] }
+  {
+    \skip_vertical:n { 2 ex }
+    \noindent \textsf{ 参考文献 } \marginpar { \raggedleft \faBook }
+    \enumerate [ topsep = 0pt ]
+    % \ignorespaces
+  }
   { \endenumerate }
+
+\NewDocumentEnvironment { note } { }
+  {
+    \skip_vertical:n { 2 ex }
+    \noindent \textsf{ 注意 } \marginpar { \raggedleft \faWarning }
+    \par
+    % \ignorespaces
+  }
+  { }
+
+\reversemarginpar
 
 % TeX logo 命令
 \clist_map_inline:nn
@@ -295,7 +353,7 @@
     \cs_set_protected:cpn {#1}
       {
         \group_begin:
-          \FETAMONT #1
+          \LogoFont #1
         \group_end:
       }
   }
@@ -311,6 +369,7 @@
 \cs_set_protected:Npn \TikZ     { Ti\textit{k}Z }
 
 % 宏包与文档类
+% TODO
 \DeclareRobustCommand\cs[1]{\texttt{\char`\\#1}}
 \DeclareRobustCommand\meta[1]{%
      \ensuremath\langle
@@ -335,6 +394,9 @@
 \DeclareRobustCommand \env {\texttt}
 \DeclareRobustCommand \pkg {\textsf}
 \DeclareRobustCommand \cls {\textsf}
+
+% 强调
+\cs_set_eq:NN \strong \textsf
 
 % 英文书名，应该用意大利体
 \cs_new_eq:NN \book \emph
@@ -394,77 +456,127 @@
 \newcount\DT@treenum \DT@treenum=0
 \newif\ifDT@split
 
-\RequirePackage[table,dvipsnames]{xcolor}
-\RequirePackage{listings}
-\definecolor{gbblue}{RGB}{23,74,117}
-\lstnewenvironment{texlist}{%
-    \lstset{% general command to set parameter(s)
-    %name=#1,
-    %label=#2,
-    %caption=\lstname,
-    xleftmargin=3em,%\parindent
-    linewidth=\linewidth,
-    breaklines=true,
-    %showspaces=true,
-    extendedchars=false,
-    columns=fullflexible,%flexible,
-    %aboveskip=2pt,
-    boxpos=t,
-    rulesep=0pt,
-    frame=tb,
-    framesep=0pt,
-    rulecolor=\color{gbblue},
-    fontadjust=true,
-    language=[LaTeX]TeX,
-    %backgroundcolor=\color{yellow}, %背景颜色
-    numbers=left,
-    numberstyle=\tiny\color{gbblue},
-    basicstyle=\footnotesize\ttfamily, % print whole listing small
-    keywordstyle=\color{blue}\bfseries,%\underbar,
-    % underlined bold black keywords
-    identifierstyle=, % nothing happens
-    commentstyle=\color{green!50!black}, % white comments
-    stringstyle=\ttfamily, % typewriter type for strings
-    showstringspaces=false}% no special string spaces
-}{}
+% 代码高亮环境
+\cs_set:Npn \htmlcolor #1
+  { \color [ HTML ] {#1} }
+\lstdefinelanguage { JSON }
+  {
+    keywords    = { true, false, null },
+    sensitive   = false,
+    comment     = [l] { // },
+    morecomment = [s] { /* } { */ },
+    morestring  = [b] ',
+    morestring  = [b] "
+  }
+\lstdefinestyle { style@base }
+  {
+    extendedchars   = true,
+    gobble          = 1,
+    frame           = l,
+    framerule       = 1 pt,
+    framesep        = 0 pt,
+    escapeinside    = {(*}{*)},
+    basicstyle      =     \htmlcolor { 657B83 } \small \CodeFont \CJKfamily { tt },
+    keywordstyle    = [1] \htmlcolor { 859900 },
+    keywordstyle    = [2] \htmlcolor { 073642 } \bfseries,
+    commentstyle    =     \htmlcolor { 93A1A1 } \itshape,
+    stringstyle     =     \htmlcolor { 2AA198 },
+    backgroundcolor =     \htmlcolor { FDF6E3 },
+  }
+\lstdefinestyle { style@tex }
+  {
+    style       = style@base,
+    rulecolor   = \htmlcolor { 859900 },
+    language    = [LaTeX] TeX,
+    alsoletter  = { * },
+    texcsstyle  = * [1] \htmlcolor { 268BD2 },
+    texcsstyle  = * [2] \htmlcolor { 859900 },
+    texcsstyle  = * [3] \htmlcolor { D30102 },
+    texcsstyle  = * [4] \htmlcolor { 073642 } \bfseries,
+    deletetexcs =
+      { begin, end, documentclass, usepackage, def, fi, if, let, newcommand, renewcommand },
+    moretexcs   = [1] { part, chapter, section, subsection, subsubsection, paragraph, subparagraph },
+    moretexcs   = [2] { begin, end },
+    moretexcs   = [3] { documentclass, usepackage },
+    moretexcs   = [4] { def, fi, if, let, newcommand, renewcommand },
+    % literate    =
+    %   * { \\!  } { { \textcolor {red} { \textbackslash!              } } } 2
+    %     { \\,  } { { \textcolor {red} { \textbackslash,              } } } 2
+    %     { \\\\ } { { \textcolor {red} { \textbackslash\textbackslash } } } 2,
+  }
+\lstdefinestyle { style@lua }
+  {
+    style        = style@base,
+    rulecolor    = \htmlcolor { 073642 },
+    language     = [5.2] Lua,
+  }
+\lstdefinestyle { style@sh }
+  {
+    style        = style@base,
+    rulecolor    = \htmlcolor { D30102 },
+    language     = sh,
+    alsoletter   = { - / \$ },
+    keywords     = [1] { fi, if, then },
+    keywords     = [2] { cd, export, ls, rm, rmdir }
+  }
+\lstdefinestyle { style@bat }
+  {
+    style        = style@base,
+    rulecolor    = \htmlcolor { D33682 },
+    language     = command.com,
+  }
+\lstdefinestyle { style@py }
+  {
+    style        = style@base,
+    rulecolor    = \htmlcolor { 268BD2 },
+    language     = Python,
+  }
+\lstdefinestyle { style@json }
+  {
+    style        = style@base,
+    rulecolor    = \htmlcolor { 268BD2 },
+    language     = JSON,
+  }
+% 连字符 - 原本以数学模式输出，此处改为普通文本。
+% 见 https://tex.stackexchange.com/q/33185/136923。
+\lst@CCPutMacro
+  \lst@ProcessOther { "2D } { \lst@ttfamily { -{} } { -{} } }
+  \@empty \z@ \@empty
+% 高亮 \\、\! 等
+% 见 https://tex.stackexchange.com/q/267481/136923。
+% \lst@AddToHook{SelectCharTable}
+%   {\ifx\lst@literate\@empty\else
+%        \expandafter\lst@Literate\lst@literate{}\relax\z@
+%    \fi}
+\clist_map_inline:nn
+  { tex, sh, bat, py, lua, json }
+  {
+    \lstnewenvironment { #1 code } [1] [ ]
+      { \lstset { style = style @ #1, ##1 } }
+      { }
+  }
 
-\lstnewenvironment{texinlist}{%
-    \lstset{% general command to set parameter(s)
-        %name=#1,
-        %label=#2,
-        %caption=\lstname,
-        %xleftmargin=\parindent,
-        linewidth=\linewidth,
-        breaklines=true,
-        %showspaces=true,
-        extendedchars=false,
-        columns=fullflexible,%flexible,
-        %aboveskip=2pt,
-        boxpos=t,
-        rulesep=0pt,
-        frame=tb,
-        framesep=0pt,
-        rulecolor=\color{gbblue},
-        fontadjust=true,
-        language=[LaTeX]TeX,
-        %backgroundcolor=\color{yellow}, %背景颜色
-        numbers=left,
-        numberstyle=\tiny\color{gbblue},
-        basicstyle=\footnotesize\ttfamily, % print whole listing small
-        keywordstyle=\color{blue}\bfseries,%\underbar,
-        % underlined bold black keywords
-        identifierstyle=, % nothing happens
-        commentstyle=\color{green!50!black}, % white comments
-        stringstyle=\ttfamily, % typewriter type for strings
-        showstringspaces=false% no special string spaces
-    }
-}{}
-
-
-\setlist[enumerate]{
-    itemsep       = 0 pt,
-    parsep        = 0 pt,
-    listparindent = \parindent,
-    leftmargin=\parindent,
-    itemindent=0pt
-    }
+% 标题页
+\AtBeginDocument
+  {
+    \begin{titlepage}
+      \hbox:n { } \vfil
+      \skip_vertical:n { 60 pt }
+      \begin{center}
+        \group_begin:
+          \Huge \sffamily \faqTitle \quad \faqVersion \par
+        \group_end:
+        \skip_vertical:n { 3 em }
+        \group_begin:
+          \Large \faqAuthor \par
+        \group_end:
+        \skip_vertical:n { 1.5 em }
+        \group_begin:
+          \Large \@date \par
+        \group_end:
+        \vfill
+        \includegraphics [ width = 10 cm] { images/hummingbird.pdf }
+        \vfill
+      \end{center}
+    \end{titlepage}
+  }
